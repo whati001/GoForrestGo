@@ -1,0 +1,9 @@
+worker: 5
+
+source:
+  name: "sourceSystem"
+  host: "sourceHost"
+
+target:
+  name: "target"
+  host: "targetHost"

@@ -1,2 +1,2 @@
 # GoForrestGo
-Simple Worker Producer implementation in golang
+Simple WorkerGroup implementation with a single producer and multiple consumer in golang
