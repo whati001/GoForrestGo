@@ -112,6 +112,8 @@ func main() {
 
 	// we will use a waitgroup to wait for all wokers finishing there work
 	var wg sync.WaitGroup
+	// we will use the mutex to wait until the reporter thread is done
+	var rm sync.Mutex
 
 	// ----------------------------------------------------------------
 	// first let's fire up all the workers which will to the hard work
@@ -131,13 +133,15 @@ func main() {
 	// in a real wold example, we could stream the result back to the
 	// http client
 	// we have not written a separate function, just use the short version
-	go func(res chan string) {
+	rm.Lock()
+	go func(res chan string, mutex *sync.Mutex) {
 		var idx int = 0
 		for found := range res {
 			log.Printf("Result[%d] -> %s\n", idx, found)
 			idx++
 		}
-	}(res)
+		rm.Unlock()
+	}(res, &rm)
 
 	// ----------------------------------------------------------------
 	// all your workers listen on the work channel for new tasks
@@ -150,6 +154,14 @@ func main() {
 	// if all the workers are done, we can close the res channel
 	// this will signal the go routine in line 129 to stop and release memory
 	close(res)
+
+	// next, we need to wait until our reporter is done with it's work
+	// this is crucial, because if the report for examples stores the results
+	// to something like a database, we need to ensure consistency and proper closing
+	// the main thread will block at the Lock() call until the reporter thread unlocks it
+	// to avoid any futher locks, we unlock it again
+	rm.Lock()
+	rm.Unlock()
 
 	// finally we can go ahead with your logic as we like
 	// for example if this code was triggered by a http request
